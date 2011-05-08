@@ -19,6 +19,7 @@ import java.util.Map;
 /**
  * Created by psyrtsov
  * psdo : remove req of same generic type for whole model
+ * fixme: nodes directly under root are not droppable
  */
 public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T> {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})

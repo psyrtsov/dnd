@@ -18,14 +18,19 @@ import java.util.Map;
 
 /**
  * Created by psyrtsov
- * psdo : remove req of same generic type for whole tree model
- * fixme: nodes directly under root are not droppable
+ * psdo: remove req of same generic type for whole tree model
+ * psdo: nodes directly under root are not droppable
  */
 public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T> {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private final IdMap idMap = new IdMap();
     private Map<String, DNDNodeInfo> cache = new HashMap<String, DNDNodeInfo>();
     private boolean positionerOffset = false;
+    private final T rootValue;
+
+    public DNDTreeViewModel(T rootValue) {
+        this.rootValue = rootValue;
+    }
 
     public DNDNodeInfo getDNDNodeInfo(String key) {
         return cache.get(key);
@@ -82,7 +87,7 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
             idx = 0;
         }
         DNDNodeInfo parentNodeInfo = cache.get(parentKey);
-        moveNode(dndNodeInfo.item, parentNodeInfo.item, idx);
+        moveNode(dndNodeInfo.item, parentNodeInfo == null? rootValue: parentNodeInfo.item, idx);
     }
 
     protected abstract boolean moveNode(T item, T newParent, int idx);

@@ -19,7 +19,6 @@ import java.util.Map;
 /**
  * Created by psyrtsov
  * psdo: remove req of same generic type for whole tree model
- * psdo: nodes directly under root are not droppable
  */
 public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T> {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
@@ -40,17 +39,40 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
         positionerOffset = offset;
     }
 
+    /**
+     * this method has to be invoked on parent object when
+     * @param parent - parent data item
+     */
+    public void refresh(T parent) {
+        Integer pid = idMap.require(parent);
+        final DNDNodeInfo parentDndNodeInfo = cache.get(pid);
+        final List<T> list = parentDndNodeInfo.dataProvider.getList();
+        for (T item : list) {
+            String key = idMap.require(item).toString();
+            DNDNodeInfo dndNodeInfo = cache.get(key);
+            if (dndNodeInfo == null) {
+                dndNodeInfo = new DNDNodeInfo(item, parentDndNodeInfo);
+                cache.put(key, dndNodeInfo);
+            }
+        }
+        parentDndNodeInfo.dataProvider.refresh();
+    }
+
     @SuppressWarnings({"unchecked"})
     public ListDataProvider<T> createDataProvider(Object parent, List<T> children, ProvidesKey<T> keyProvider) {
+        String parentKey = idMap.require(parent).toString();
+        DNDNodeInfo parentDndNodeInfo = cache.get(parentKey);
+        if (parentDndNodeInfo == null) {
+            parentDndNodeInfo = new DNDNodeInfo((T) parent, null);
+            cache.put(parentKey, parentDndNodeInfo);
+        }
         ListDataProvider<T> dataProvider = new ListDataProvider<T>(keyProvider);
-        Integer pid = idMap.require(parent);
-        if (children != null) {
-            dataProvider.setList(children);
-            for (T item : children) {
-                Object key = idMap.require(item);
-                final DNDNodeInfo dndNodeInfo = new DNDNodeInfo(item, dataProvider, pid);
-                cache.put(key.toString(), dndNodeInfo);
-            }
+        parentDndNodeInfo.dataProvider = dataProvider;
+        dataProvider.setList(children);
+        for (T item : children) {
+            Object key = idMap.require(item);
+            final DNDNodeInfo dndNodeInfo = new DNDNodeInfo(item, parentDndNodeInfo);
+            cache.put(key.toString(), dndNodeInfo);
         }
         return dataProvider;
     }
@@ -64,6 +86,7 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
         final DNDNodeInfo dndNodeInfo = cache.get(key.toString());
         final int savedIdx = dndNodeInfo.indexOf();
         dndNodeInfo.remove();
+        dndNodeInfo.refresh();
         return new DNDContext(key) {
             @Override
             public void revert() {
@@ -77,64 +100,62 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
         int idx = positioner.indexOf();
         Object key = dndContext.getKey();
         final DNDNodeInfo dndNodeInfo = cache.get(key.toString());
-        String parentKey;
+        DNDNodeInfo parentNodeInfo;
         if (!positionerOffset) {
-            parentKey = positioner.getParentKey();
+            String parentKey;
+            parentNodeInfo = positioner.getParentDndNodeInfo();
         } else {
             // when positioner is shifted we should use previous node as parent
-            T parentItem = positioner.dataProvider.getList().get(idx - 1);
-            parentKey = idMap.get(parentItem).toString();
+            T parentItem = positioner.getParentDndNodeInfo().dataProvider.getList().get(idx - 1);
+            String parentKey = idMap.get(parentItem).toString();
+            parentNodeInfo = cache.get(parentKey);
             idx = 0;
         }
-        DNDNodeInfo parentNodeInfo = cache.get(parentKey);
         moveNode(dndNodeInfo.item, parentNodeInfo == null? rootValue: parentNodeInfo.item, idx);
+        dndNodeInfo.parentDndNodeInfo = parentNodeInfo;
     }
 
     protected abstract boolean moveNode(T item, T newParent, int idx);
 
     public class DNDNodeInfo {
         public final T item;
-        /**
-         * this is parent's data provider that contains this node
-         */
+        private DNDNodeInfo parentDndNodeInfo;
         private ListDataProvider<T> dataProvider;
-        private Integer parentKey;
 
-        public DNDNodeInfo(T item, ListDataProvider<T> dataProvider, Integer parentKey) {
+        public DNDNodeInfo(T item, DNDNodeInfo parentDndNodeInfo) {
             this.item = item;
-            this.dataProvider = dataProvider;
-            this.parentKey = parentKey;
+            this.parentDndNodeInfo = parentDndNodeInfo;
         }
 
         public int indexOf() {
-            List<?> list = dataProvider.getList();
+            List<?> list = parentDndNodeInfo.dataProvider.getList();
             return list.indexOf(item);
         }
 
         public boolean remove() {
-            return dataProvider.getList().remove(item);
+            return parentDndNodeInfo.dataProvider.getList().remove(item);
         }
 
         public void refresh() {
-            dataProvider.refresh();
+            parentDndNodeInfo.dataProvider.refresh();
         }
 
-        public String getParentKey() {
-            return parentKey.toString();
+        public DNDNodeInfo getParentDndNodeInfo() {
+            return parentDndNodeInfo;
         }
 
         DNDNodeInfo addSibling(int idx, T newItem) {
-            List<T> list = dataProvider.getList();
+            List<T> list = parentDndNodeInfo.dataProvider.getList();
             if (list.size() <= idx) {
                 list.add(newItem);
             } else {
                 list.add(idx, newItem);
             }
-            return new DNDNodeInfo(newItem, dataProvider, parentKey);
+            return new DNDNodeInfo(newItem, parentDndNodeInfo);
         }
 
         public void restore(int savedIdx) {
-            dataProvider.getList().add(savedIdx, item);
+            parentDndNodeInfo.dataProvider.getList().add(savedIdx, item);
         }
     }
 

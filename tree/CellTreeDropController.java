@@ -28,7 +28,7 @@ public class CellTreeDropController implements DropController {
         int x = event.getRelativeX(dropTarget);
         int y = event.getRelativeY(dropTarget);
         String key = dropTarget.getAttribute(DNDTreeViewModel.KEY_ATTR);
-        String c = putPositionerAt(new Pos(x >= 16 ? 16 : 0, y > 10 ? 1 : 0, key));
+        putPositionerAt(new Pos(x >= 16 ? 16 : 0, y > 10 ? 1 : 0, key));
     }
 
     private Element findClosestElement(MouseMoveEvent event, NodeList<Element> dropTargetList) {
@@ -72,13 +72,13 @@ public class CellTreeDropController implements DropController {
         return dropTarget;
     }
 
-    public String putPositionerAt(Pos pos) {
+    public void putPositionerAt(Pos pos) {
         if (pos.y <= 0) {
             // horizontal shift only affects when cursor below node
             pos.x = 0;
         }
         if (pos.equals(lastPos)) {
-            return "eq";
+            return;
         }
         if (positioner != null) {
             positioner.remove();
@@ -89,13 +89,12 @@ public class CellTreeDropController implements DropController {
         if (relativeToDNDNodeInfo != null) {
             newPositioner = insertPositioner(pos.x, pos.y, relativeToDNDNodeInfo);
             if (newPositioner == null) {
-                return "null";
+                return;
             }
             newPositioner.refresh();
         }
         positioner = newPositioner;
         lastPos = pos;
-        return "";
     }
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
@@ -104,17 +103,21 @@ public class CellTreeDropController implements DropController {
             Stack<DNDTreeViewModel.DNDNodeInfo> nodesToOpen = new Stack<DNDTreeViewModel.DNDNodeInfo>();
             DNDTreeViewModel.DNDNodeInfo nodePos = relativeNode;
             while (nodePos != null) {
-                nodesToOpen.push(nodePos);
-                nodePos = model.getDNDNodeInfo(nodePos.getParentKey());
+                if (nodePos.getParentDndNodeInfo() != null) { // don't push root
+                    nodesToOpen.push(nodePos);
+                }
+                nodePos = nodePos.getParentDndNodeInfo();
             }
+            // open subtrees one by one
             TreeNode treeNode = tree.getRootTreeNode();
             while (!nodesToOpen.empty()) {
                 nodePos = nodesToOpen.pop();
-                treeNode = treeNode.setChildOpen(nodePos.indexOf(), true);
+                final int idx = nodePos.indexOf();
+                treeNode = treeNode.setChildOpen(idx, true);
             }
             if (treeNode != null && treeNode.getChildCount() > 0) {
                 // if has children  insert positioner below this node without offset
-                // user still can insert it as child by shifting slightly down
+                // user still can insert it as child by shifting slightly to the right
                 x = 0;
             }
         } else {

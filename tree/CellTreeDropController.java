@@ -115,9 +115,9 @@ public class CellTreeDropController implements DropController {
         return res;
     }
 
-    public TreeNode open(DNDTreeViewModel.DNDNodeInfo relativeNode, final boolean open) {
+    public TreeNode open(DNDTreeViewModel.DNDNodeInfo nodeToOpen, final boolean open) {
         Stack<DNDTreeViewModel.DNDNodeInfo> nodesToOpen = new Stack<DNDTreeViewModel.DNDNodeInfo>();
-        DNDTreeViewModel.DNDNodeInfo nodePos = relativeNode;
+        DNDTreeViewModel.DNDNodeInfo nodePos = nodeToOpen;
         while (nodePos != null) {
             if (nodePos.getParentDndNodeInfo() != null) { // don't push root
                 nodesToOpen.push(nodePos);
@@ -142,8 +142,12 @@ public class CellTreeDropController implements DropController {
         if (positioner == null) {
             dndContext.revert();
         } else {
-            model.drop(positioner, dndContext);
+            final boolean positionerOffset = model.isPositionerOffset();
+            final DNDTreeViewModel.DNDNodeInfo parentDndNodeInfo = model.drop(positioner, dndContext);
             positioner.remove();
+            if (positionerOffset) {
+                open(parentDndNodeInfo, true);
+            }
             positioner.refresh();
         }
         positioner = null;

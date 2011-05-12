@@ -36,6 +36,10 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
         return cache.get(key);
     }
 
+    public boolean isPositionerOffset() {
+        return positionerOffset;
+    }
+
     public void setPositionerOffset(boolean offset) {
         positionerOffset = offset;
     }
@@ -92,6 +96,7 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
             @Override
             public void init(DropController dropController) {
                 if (parentDndNodeInfo.dataProvider.getList().isEmpty()) {
+                    // this is only way I could make CellTree hide "no data" when I'm taking last child from it 
                     ((CellTreeDropController)dropController).open(parentDndNodeInfo, false);
                 }
             }
@@ -104,7 +109,7 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
         };
     }
 
-    public void drop(DNDNodeInfo positioner, DNDContext dndContext) {
+    public DNDNodeInfo drop(DNDNodeInfo positioner, DNDContext dndContext) {
         int idx = positioner.indexOf();
         Object key = dndContext.getKey();
         final DNDNodeInfo dndNodeInfo = cache.get(key.toString());
@@ -119,7 +124,7 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
             idx = 0;
         }
         moveNode(dndNodeInfo.item, parentNodeInfo == null? rootValue: parentNodeInfo.item, idx);
-        dndNodeInfo.parentDndNodeInfo = parentNodeInfo;
+        return dndNodeInfo.parentDndNodeInfo = parentNodeInfo;
     }
 
     protected abstract boolean moveNode(T item, T newParent, int idx);

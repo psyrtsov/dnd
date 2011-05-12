@@ -1,5 +1,6 @@
 package app.dnd.tree;
 
+import app.dnd.DropController;
 import app.dnd.IdMap;
 import com.google.gwt.cell.client.CompositeCell;
 import com.google.gwt.cell.client.HasCell;
@@ -82,12 +83,19 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
     }
 
     public DNDContext startDragging(T item) {
-        final Object key = idMap.get(item);
-        final DNDNodeInfo dndNodeInfo = cache.get(key.toString());
+        final String key = idMap.get(item).toString();
+        final DNDNodeInfo dndNodeInfo = cache.get(key);
         final int savedIdx = dndNodeInfo.indexOf();
+        final DNDNodeInfo parentDndNodeInfo = dndNodeInfo.parentDndNodeInfo;
         dndNodeInfo.remove();
-        dndNodeInfo.refresh();
         return new DNDContext(key) {
+            @Override
+            public void init(DropController dropController) {
+                if (parentDndNodeInfo.dataProvider.getList().isEmpty()) {
+                    ((CellTreeDropController)dropController).open(parentDndNodeInfo, false);
+                }
+            }
+
             @Override
             public void revert() {
                 dndNodeInfo.restore(savedIdx);
@@ -102,7 +110,6 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
         final DNDNodeInfo dndNodeInfo = cache.get(key.toString());
         DNDNodeInfo parentNodeInfo;
         if (!positionerOffset) {
-            String parentKey;
             parentNodeInfo = positioner.getParentDndNodeInfo();
         } else {
             // when positioner is shifted we should use previous node as parent
@@ -156,6 +163,11 @@ public abstract class DNDTreeViewModel<T> implements TreeViewModel, DragSource<T
 
         public void restore(int savedIdx) {
             parentDndNodeInfo.dataProvider.getList().add(savedIdx, item);
+        }
+
+        @Override
+        public String toString() {
+            return item.toString();
         }
     }
 

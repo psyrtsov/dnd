@@ -84,48 +84,58 @@ public class CellTreeDropController implements DropController {
             positioner.remove();
             positioner.refresh();
         }
-        DNDTreeViewModel.DNDNodeInfo newPositioner = null;
-        DNDTreeViewModel.DNDNodeInfo relativeToDNDNodeInfo = model.getDNDNodeInfo(pos.key);
-        if (relativeToDNDNodeInfo != null) {
-            newPositioner = insertPositioner(pos.x, pos.y, relativeToDNDNodeInfo);
-            if (newPositioner == null) {
-                return;
-            }
-            newPositioner.refresh();
-        }
-        positioner = newPositioner;
+        positioner = putPositioner(pos.x > 0, pos.y > 0, pos.key);
         lastPos = pos;
     }
 
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private DNDTreeViewModel.DNDNodeInfo insertPositioner(int x, int y, DNDTreeViewModel.DNDNodeInfo relativeNode) {
-        if (y > 0 && x > 0) {
-            Stack<DNDTreeViewModel.DNDNodeInfo> nodesToOpen = new Stack<DNDTreeViewModel.DNDNodeInfo>();
-            DNDTreeViewModel.DNDNodeInfo nodePos = relativeNode;
-            while (nodePos != null) {
-                if (nodePos.getParentDndNodeInfo() != null) { // don't push root
-                    nodesToOpen.push(nodePos);
-                }
-                nodePos = nodePos.getParentDndNodeInfo();
-            }
-            // open subtrees one by one
-            TreeNode treeNode = tree.getRootTreeNode();
-            while (!nodesToOpen.empty()) {
-                nodePos = nodesToOpen.pop();
-                final int idx = nodePos.indexOf();
-                treeNode = treeNode.setChildOpen(idx, true);
-            }
+    public DNDTreeViewModel.DNDNodeInfo putPositioner(boolean xShifted, boolean insertBelow, String key) {
+        DNDTreeViewModel.DNDNodeInfo relativeNode = model.getDNDNodeInfo(key);
+        if (relativeNode == null) {
+            return null;
+        }
+
+        if (insertBelow && xShifted) {
+            TreeNode treeNode = open(relativeNode, true);
             if (treeNode != null && treeNode.getChildCount() > 0) {
                 // if has children  insert positioner below this node without offset
                 // user still can insert it as child by shifting slightly to the right
-                x = 0;
+                xShifted = false;
             }
         } else {
-            x = 0;
+            xShifted = false;
         }
-        model.setPositionerOffset(x > 0);
-        int idx = relativeNode.indexOf() + y;
-        return relativeNode.addSibling(idx, model.getPositionerItem());
+        model.setPositionerOffset(xShifted);
+        int idx = relativeNode.indexOf();
+        if (insertBelow) {
+            idx++;
+        }
+        @SuppressWarnings({"unchecked"})
+        final DNDTreeViewModel.DNDNodeInfo res = relativeNode.addSibling(idx, model.getPositionerItem());
+        res.refresh();        
+        return res;
+    }
+
+    public TreeNode open(DNDTreeViewModel.DNDNodeInfo relativeNode, final boolean open) {
+        Stack<DNDTreeViewModel.DNDNodeInfo> nodesToOpen = new Stack<DNDTreeViewModel.DNDNodeInfo>();
+        DNDTreeViewModel.DNDNodeInfo nodePos = relativeNode;
+        while (nodePos != null) {
+            if (nodePos.getParentDndNodeInfo() != null) { // don't push root
+                nodesToOpen.push(nodePos);
+            }
+            nodePos = nodePos.getParentDndNodeInfo();
+        }
+        // open subtrees one by one
+        TreeNode treeNode = tree.getRootTreeNode();
+        while (!nodesToOpen.empty()) {
+            nodePos = nodesToOpen.pop();
+            final int idx = nodePos.indexOf();
+            if (nodesToOpen.isEmpty()) {
+                treeNode = treeNode.setChildOpen(idx, open);
+            } else {
+                treeNode = treeNode.setChildOpen(idx, true);
+            }
+        }
+        return treeNode;
     }
 
     public void drop(MouseUpEvent event, DNDContext dndContext) {

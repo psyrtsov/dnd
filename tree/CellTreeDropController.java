@@ -2,7 +2,6 @@ package app.dnd.tree;
 
 import app.dnd.DNDContext;
 import app.dnd.DropController;
-import app.dnd.drag.DragSource;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.event.dom.client.MouseMoveEvent;

@@ -1,7 +1,10 @@
 package app.dnd.tree;
 
-import app.client.cell.TreeItem;
+import app.dnd.DNDContext;
 import app.dnd.IdMap;
+import app.dnd.drag.DragSource;
+import app.dnd.resources.DNDCssResources;
+import app.dnd.resources.DNDResources;
 import com.google.gwt.cell.client.CompositeCell;
 import com.google.gwt.cell.client.HasCell;
 import com.google.gwt.core.client.GWT;
@@ -9,10 +12,8 @@ import com.google.gwt.safehtml.client.SafeHtmlTemplates;
 import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.user.cellview.client.TreeNode;
-import com.google.gwt.view.client.*;
-import app.dnd.DNDContext;
-import app.dnd.drag.DragSource;
-
+import com.google.gwt.view.client.ListDataProvider;
+import com.google.gwt.view.client.ProvidesKey;
 
 import java.util.HashMap;
 import java.util.List;
@@ -51,10 +52,11 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
      * this method has to be invoked on parent object when
      * @param parent - parent data item
      */
+    @SuppressWarnings({"UnusedDeclaration"})
     public void refresh(Object parent) {
-        Integer pid = idMap.require(parent);
+        String pid = idMap.require(parent).toString();
         final DNDNodeInfo parentDndNodeInfo = cache.get(pid);
-        final List<Object> list = parentDndNodeInfo.dataProvider.getList();
+        final List list = parentDndNodeInfo.dataProvider.getList();
         for (Object item : list) {
             String key = idMap.require(item).toString();
             DNDNodeInfo dndNodeInfo = cache.get(key);
@@ -71,7 +73,7 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
         String parentKey = idMap.require(parent).toString();
         DNDNodeInfo parentDndNodeInfo = cache.get(parentKey);
         if (parentDndNodeInfo == null) {
-            parentDndNodeInfo = new DNDNodeInfo((Object) parent, null);
+            parentDndNodeInfo = new DNDNodeInfo(parent, null);
             cache.put(parentKey, parentDndNodeInfo);
         }
         ListDataProvider<T> dataProvider = new ListDataProvider<T>(keyProvider);
@@ -129,8 +131,13 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
         return dndNodeInfo.parentDndNodeInfo = parentNodeInfo;
     }
 
-    public DNDCompositeCell createDropableCell(List<HasCell<TreeItem, ?>> cellList) {
-        return new DNDCompositeCell(cellList);
+    public<T> DNDCompositeCell<T> createDropableCell(List<HasCell<T, ?>> cellList) {
+        return new DNDCompositeCell<T>(cellList);
+    }
+
+    @SuppressWarnings({"UnusedDeclaration"})
+    public<T> DNDCompositeCell<T> createDropableCell(List<HasCell<T, ?>> cellList, DNDResources dndResources) {
+        return new DNDCompositeCell<T>(cellList, dndResources);
     }
 
     public class DNDNodeInfo {
@@ -160,8 +167,9 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
             return parentDndNodeInfo;
         }
 
+        @SuppressWarnings({"unchecked"})
         DNDNodeInfo addSibling(int idx, Object newItem) {
-            List<Object> list = parentDndNodeInfo.dataProvider.getList();
+            List list = parentDndNodeInfo.dataProvider.getList();
             if (list.size() <= idx) {
                 list.add(newItem);
             } else {
@@ -170,6 +178,7 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
             return new DNDNodeInfo(newItem, parentDndNodeInfo);
         }
 
+        @SuppressWarnings({"unchecked"})
         public void restore(int savedIdx) {
             parentDndNodeInfo.dataProvider.getList().add(savedIdx, item);
         }
@@ -187,31 +196,36 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
         @Template("<" + TAG + " " + KEY_ATTR + "=\"{0}\"/>")
         SafeHtml dropTarget(String key);
 
-        @Template("<div style=\"overflow:hidden;margin-left:0px;\" class=\"positioner\"> &nbsp; </div>")
-        SafeHtml positioner();
+        @SafeHtmlTemplates.Template("<div style=\"overflow:hidden;margin-left:0px;\" class=\"{0}\"> &nbsp; </div>")
+        SafeHtml positioner(String classes);
 
-        @Template("<div style=\"overflow:hidden;margin-left:16px;\" class=\"positioner\"> &nbsp; </div>")
-        SafeHtml offsetPositioner();
+        @SafeHtmlTemplates.Template("<div style=\"overflow:hidden;margin-left:16px;\" class=\"{0}\"> &nbsp; </div>")
+        SafeHtml offsetPositioner(String classes);
     }
 
-    private static Template template;
+    private static Template template = GWT.create(Template.class);
 
-    public class DNDCompositeCell<Object> extends CompositeCell<Object> {
-        public DNDCompositeCell(List<HasCell<Object, ?>> hasCells) {
+    public class DNDCompositeCell<T> extends CompositeCell<T> {
+        private final DNDCssResources dndCssResources;
+
+        public DNDCompositeCell(List<HasCell<T, ?>> hasCells) {
+            this(hasCells, DNDResources.INSTANCE);
+        }
+
+        public DNDCompositeCell(List<HasCell<T, ?>> hasCells, DNDResources dndResources) {
             super(hasCells);
-            if (template == null) {
-                template = GWT.create(Template.class);
-            }
+            this.dndCssResources = dndResources.css();
+            dndCssResources.ensureInjected();
         }
 
         @SuppressWarnings({"unchecked"})
         @Override
-        public void render(Context context, Object value, SafeHtmlBuilder sb) {
+        public void render(Context context, T value, SafeHtmlBuilder sb) {
             if (value == getPositionerItem()) {
                 if (positionerOffset) {
-                    sb.append(template.offsetPositioner());
+                    sb.append(template.offsetPositioner(dndCssResources.positioner()));
                 } else {
-                    sb.append(template.positioner());
+                    sb.append(template.positioner(dndCssResources.positioner()));
                 }
             } else {
                 final SafeHtml html = template.dropTarget(idMap.require(value).toString());

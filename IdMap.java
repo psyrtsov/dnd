@@ -5,10 +5,10 @@ import java.util.HashMap;
 /**
  * Created by psyrtsov
  */
-public class IdMap<T> extends HashMap<T, Integer> {
+public class IdMap extends HashMap<Object, Integer> {
     private int lastId = 1;
 
-    public synchronized Integer require(T o) {
+    public synchronized Integer require(Object o) {
         Integer id = super.get(o);
         if (id == null) {
             id = lastId++;

@@ -19,7 +19,6 @@ public class DragController {
 
     public boolean dragStart(DNDContext dndContext, Element parent) {
         panel.add(new DragPanel(parent, dropController, dndContext));
-        dndContext.init(dropController);
         return true;
     }
 

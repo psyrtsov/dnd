@@ -1,33 +1,33 @@
 package app.dnd.tree;
 
+import app.dnd.DNDContext;
+import app.dnd.DropController;
+import app.dnd.drag.DragSource;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.cellview.client.TreeNode;
-import app.dnd.DNDContext;
-import app.dnd.DropController;
 
 import java.util.Stack;
 
-public class CellTreeDropController implements DropController {
-    private final DNDTreeViewModel model;
+public class CellTreeDropController extends DNDTreeViewModelAdaper implements DropController {
     private CellTree tree;
     private Pos lastPos;
-    private DNDTreeViewModel.DNDNodeInfo positioner = null;
+    private DNDTreeViewModelAdaper.DNDNodeInfo positioner = null;
 
-    public CellTreeDropController(DNDTreeViewModel model, CellTree tree) {
-        this.model = model;
+    public void init(CellTree tree, DNDTreeViewModel dndTreeViewModel, Object rootValue) {
+        super.init(dndTreeViewModel, rootValue);
         this.tree = tree;
     }
 
     public void onMouseMove(MouseMoveEvent event) {
-        NodeList<Element> dropTargetList = tree.getElement().getElementsByTagName(DNDTreeViewModel.TAG);
+        NodeList<Element> dropTargetList = tree.getElement().getElementsByTagName(DNDTreeViewModelAdaper.TAG);
         Element dropTarget = findClosestElement(event, dropTargetList);
         int x = event.getRelativeX(dropTarget);
         int y = event.getRelativeY(dropTarget);
-        String key = dropTarget.getAttribute(DNDTreeViewModel.KEY_ATTR);
+        String key = dropTarget.getAttribute(DNDTreeViewModelAdaper.KEY_ATTR);
         putPositionerAt(new Pos(x >= 16 ? 16 : 0, y > 10 ? 1 : 0, key));
     }
 
@@ -88,8 +88,8 @@ public class CellTreeDropController implements DropController {
         lastPos = pos;
     }
 
-    public DNDTreeViewModel.DNDNodeInfo putPositioner(boolean xShifted, boolean insertBelow, String key) {
-        DNDTreeViewModel.DNDNodeInfo relativeNode = model.getDNDNodeInfo(key);
+    public DNDTreeViewModelAdaper.DNDNodeInfo putPositioner(boolean xShifted, boolean insertBelow, String key) {
+        DNDTreeViewModelAdaper.DNDNodeInfo relativeNode = getDNDNodeInfo(key);
         if (relativeNode == null) {
             return null;
         }
@@ -104,20 +104,20 @@ public class CellTreeDropController implements DropController {
         } else {
             xShifted = false;
         }
-        model.setPositionerOffset(xShifted);
+        setPositionerOffset(xShifted);
         int idx = relativeNode.indexOf();
         if (insertBelow) {
             idx++;
         }
         @SuppressWarnings({"unchecked"})
-        final DNDTreeViewModel.DNDNodeInfo res = relativeNode.addSibling(idx, model.getPositionerItem());
+        final DNDTreeViewModelAdaper.DNDNodeInfo res = relativeNode.addSibling(idx, getPositionerItem());
         res.refresh();        
         return res;
     }
 
-    public TreeNode open(DNDTreeViewModel.DNDNodeInfo nodeToOpen, final boolean open) {
-        Stack<DNDTreeViewModel.DNDNodeInfo> nodesToOpen = new Stack<DNDTreeViewModel.DNDNodeInfo>();
-        DNDTreeViewModel.DNDNodeInfo nodePos = nodeToOpen;
+    public TreeNode open(DNDTreeViewModelAdaper.DNDNodeInfo nodeToOpen, final boolean open) {
+        Stack<DNDTreeViewModelAdaper.DNDNodeInfo> nodesToOpen = new Stack<DNDTreeViewModelAdaper.DNDNodeInfo>();
+        DNDTreeViewModelAdaper.DNDNodeInfo nodePos = nodeToOpen;
         while (nodePos != null) {
             if (nodePos.getParentDndNodeInfo() != null) { // don't push root
                 nodesToOpen.push(nodePos);
@@ -142,8 +142,8 @@ public class CellTreeDropController implements DropController {
         if (positioner == null) {
             dndContext.revert();
         } else {
-            final boolean positionerOffset = model.isPositionerOffset();
-            final DNDTreeViewModel.DNDNodeInfo parentDndNodeInfo = model.drop(positioner, dndContext);
+            final boolean positionerOffset = isPositionerOffset();
+            final DNDTreeViewModelAdaper.DNDNodeInfo parentDndNodeInfo = super.drop(positioner, dndContext);
             positioner.remove();
             if (positionerOffset) {
                 open(parentDndNodeInfo, true);

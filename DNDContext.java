@@ -14,6 +14,5 @@ public abstract class DNDContext {
         return key;
     }
 
-    public abstract void init(DropController dropController);
     public abstract void revert();
 }

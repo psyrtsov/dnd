@@ -19,7 +19,7 @@ import app.dnd.resources.DNDResources;
 public class DragHandlerColumn<T> extends Column<T, T> {
     public static final String MOUSE_DOWN = MouseDownEvent.getType().getName();
 
-    public DragHandlerColumn(DragSource<T> dragSource, DragController dragController) {
+    public DragHandlerColumn(DragSource dragSource, DragController dragController) {
         super(new DragHandlerCell<T>(dragSource, dragController));
     }
 
@@ -29,10 +29,10 @@ public class DragHandlerColumn<T> extends Column<T, T> {
     }
 
     public static class DragHandlerCell<T> extends AbstractCell<T> {
-        private final DragSource<T> dragSource;
+        private final DragSource dragSource;
         private final DragController dragController;
 
-        public DragHandlerCell(DragSource<T> dragSource, DragController dragController) {
+        public DragHandlerCell(DragSource dragSource, DragController dragController) {
             super(MOUSE_DOWN);
             this.dragSource = dragSource;
             this.dragController = dragController;

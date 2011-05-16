@@ -23,7 +23,7 @@ import java.util.Map;
  * Created by psyrtsov
  * psdo: remove req of same generic type for whole tree model
  */
-public abstract class DNDTreeViewModelAdaper implements DragSource {
+public abstract class DNDTreeViewModelAdapter implements DragSource {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private final IdMap idMap = new IdMap();
     private Map<String, DNDNodeInfo> cache = new HashMap<String, DNDNodeInfo>();
@@ -31,7 +31,7 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
     private DNDTreeViewModel dndTreeViewModel;
     private Object rootValue;
 
-    public void init(DNDTreeViewModel dndTreeViewModel, Object rootValue) {
+    protected void init(DNDTreeViewModel dndTreeViewModel, Object rootValue) {
         this.dndTreeViewModel = dndTreeViewModel;
         this.rootValue = rootValue;
     }
@@ -54,9 +54,18 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public void refresh(Object parent) {
-        String pid = idMap.require(parent).toString();
+        final Integer pidObj = idMap.get(parent);
+        if (pidObj == null) {
+            throw new RuntimeException("Unknown tree value "+parent);
+        }
+        String pid = pidObj.toString();
         final DNDNodeInfo parentDndNodeInfo = cache.get(pid);
-        final List list = parentDndNodeInfo.dataProvider.getList();
+        final ListDataProvider dataProvider = parentDndNodeInfo.dataProvider;
+        if (dataProvider == null) {
+            open(parentDndNodeInfo, true);
+            return;
+        }
+        final List list = dataProvider.getList();
         for (Object item : list) {
             String key = idMap.require(item).toString();
             DNDNodeInfo dndNodeInfo = cache.get(key);
@@ -65,7 +74,7 @@ public abstract class DNDTreeViewModelAdaper implements DragSource {
                 cache.put(key, dndNodeInfo);
             }
         }
-        parentDndNodeInfo.dataProvider.refresh();
+        dataProvider.refresh();
     }
 
     @SuppressWarnings({"unchecked"})

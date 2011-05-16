@@ -4,5 +4,5 @@ package app.dnd.tree;
  * Created by psyrtsov
  */
 public interface DNDTreeViewModel {
-    public<T> boolean moveNode(T item, T newParent, int idx);
+    public boolean moveNode(Object item, Object newParent, int idx);
 }

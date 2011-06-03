@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package app.dnd.drag;
 
 import app.dnd.DNDContext;
@@ -21,8 +36,15 @@ import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * this is slightly tweaked version of Google's IconCellDecorator
+ * 
+ * A {@link Cell} decorator that adds an icon to another {@link Cell}.
+ *
+ * @param <C> the type that this Cell represents
+ */
 @SuppressWarnings({"JavaDoc"})
-public abstract class DragHandlerCell<T, C> implements Cell<T> {
+public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
     public static final String MOUSE_DOWN = MouseDownEvent.getType().getName();
 
     interface Template extends SafeHtmlTemplates {
@@ -75,25 +97,25 @@ public abstract class DragHandlerCell<T, C> implements Cell<T> {
      * Construct a new {@link IconCellDecorator}. The icon and the content will be
      * middle aligned by default.
      *
-     * @param dragSource - drag source
+     * @param dragSource     - drag source
      * @param dragController - drag controller
-     * @param cell the cell to decorate
+     * @param cell           the cell to decorate
      */
-    public DragHandlerCell(DragSource dragSource, DragController dragController, Cell<C> cell) {
+    public DraggableCellDecorator(DragSource dragSource, DragController dragController, Cell<C> cell) {
         this(dragSource, dragController, DNDResources.INSTANCE.images().dragHandle(), cell, HasVerticalAlignment.ALIGN_MIDDLE, DEFAULT_SPACING);
     }
 
     /**
      * Construct a new {@link IconCellDecorator}.
      *
-     * @param dragSource - drag source
+     * @param dragSource     - drag source
      * @param dragController - drag controller
-     * @param icon    the icon to use
-     * @param cell    the cell to decorate
-     * @param valign  the vertical alignment attribute of the contents
-     * @param spacing the pixel space between the icon and the cell
+     * @param icon           the icon to use
+     * @param cell           the cell to decorate
+     * @param valign         the vertical alignment attribute of the contents
+     * @param spacing        the pixel space between the icon and the cell
      */
-    public DragHandlerCell(DragSource dragSource, DragController dragController, ImageResource icon, Cell<C> cell,
+    public DraggableCellDecorator(DragSource dragSource, DragController dragController, ImageResource icon, Cell<C> cell,
                            HasVerticalAlignment.VerticalAlignmentConstant valign, int spacing) {
         this.dragSource = dragSource;
         this.dragController = dragController;

@@ -17,11 +17,10 @@ package app.dnd.drag;
 
 import app.dnd.DNDContext;
 import app.dnd.resources.DNDResources;
-import com.google.gwt.cell.client.Cell;
-import com.google.gwt.cell.client.IconCellDecorator;
-import com.google.gwt.cell.client.ValueUpdater;
+import com.google.gwt.cell.client.*;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.EventTarget;
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.i18n.client.LocaleInfo;
@@ -33,6 +32,7 @@ import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.user.client.ui.AbstractImagePrototype;
 import com.google.gwt.user.client.ui.HasVerticalAlignment;
 
+import java.security.MessageDigest;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,6 +41,7 @@ import java.util.Set;
  * 
  * A {@link Cell} decorator that adds an icon to another {@link Cell}.
  *
+ * @param <T> the type that this Cell represents
  * @param <C> the type that this Cell represents
  */
 @SuppressWarnings({"JavaDoc"})
@@ -148,36 +149,42 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
     }
 
     public boolean isEditing(Context context, Element parent, T value) {
-        return cell.isEditing(context, getCellParent(parent), mapValue(value));
+        return cell.isEditing(context, getCellParent(parent), getValue(value));
     }
 
-    public void onBrowserEvent(Context context, Element parent, T value,
+    public void onBrowserEvent(Context context, Element parent, final T value,
                                NativeEvent event, ValueUpdater<T> valueUpdater) {
         if (MOUSE_DOWN.equals(event.getType())) {
-            DNDContext dndContext = dragSource.startDragging(value);
-            dragController.dragStart(dndContext, parent);
-            event.stopPropagation();
-            event.preventDefault();
-            return;
+            EventTarget eventTarget = event.getEventTarget();
+            if (Element.is(eventTarget)) {
+              Element target = eventTarget.cast();
+              Element wrapper = parent.getFirstChildElement();
+              if (wrapper != null && wrapper.isOrHasChild(target)) {
+                  DNDContext dndContext = dragSource.startDragging(value);
+                  dragController.dragStart(dndContext, parent);
+                  event.stopPropagation();
+                  event.preventDefault();
+                  return;
+              }
+            }
         }
-        cell.onBrowserEvent(context, getCellParent(parent), mapValue(value), event,
-                getValueUpdater());
+        cell.onBrowserEvent(context, getCellParent(parent), getValue(value), event, getValueUpdater());
     }
 
     public void render(Context context, T value, SafeHtmlBuilder sb) {
         SafeHtmlBuilder cellBuilder = new SafeHtmlBuilder();
-        cell.render(context, mapValue(value), cellBuilder);
+        cell.render(context, getValue(value), cellBuilder);
 
         sb.append(template.outerDiv(direction, imageWidth, isIconUsed(value)
                 ? getIconHtml(value) : placeHolderHtml, cellBuilder.toSafeHtml()));
     }
 
     public boolean resetFocus(Context context, Element parent, T value) {
-        return cell.resetFocus(context, getCellParent(parent), mapValue(value));
+        return cell.resetFocus(context, getCellParent(parent), getValue(value));
     }
 
     public void setValue(Context context, Element parent, T value) {
-        cell.setValue(context, getCellParent(parent), mapValue(value));
+        cell.setValue(context, getCellParent(parent), getValue(value));
     }
 
     /**
@@ -245,7 +252,7 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
         return parent.getFirstChildElement().getChild(1).cast();
     }
 
-    public abstract C mapValue(T value);
+    public abstract C getValue(T value);
 
     public abstract ValueUpdater<C> getValueUpdater();
 }

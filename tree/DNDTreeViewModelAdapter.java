@@ -21,7 +21,6 @@ import java.util.Map;
 
 /**
  * Created by psyrtsov
- * psdo: remove req of same generic type for whole tree model
  */
 public abstract class DNDTreeViewModelAdapter implements DragSource {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
@@ -33,6 +32,11 @@ public abstract class DNDTreeViewModelAdapter implements DragSource {
     private boolean positionerOffset = false;
     private DNDTreeViewModel dndTreeViewModel;
     private Object rootValue;
+
+    public void clear() {
+        idMap.clear();
+        cache.clear();
+    }
 
     protected void init(DNDTreeViewModel dndTreeViewModel, Object rootValue) {
         this.dndTreeViewModel = dndTreeViewModel;

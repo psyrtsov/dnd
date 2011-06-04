@@ -258,5 +258,7 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
 
     public abstract C getValue(T value);
 
-    public abstract ValueUpdater<C> getValueUpdater();
+    public ValueUpdater<C> getValueUpdater() {
+        return null;
+    }
 }

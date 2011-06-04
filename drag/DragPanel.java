@@ -1,5 +1,6 @@
 package app.dnd.drag;
 
+import app.dnd.resources.DNDResources;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.EventTarget;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
@@ -21,8 +22,9 @@ public final class DragPanel
     private final HandlerRegistration mouseMoveRegistration;
     private final HandlerRegistration mouseUpRegistration;
 
-    public DragPanel(Element el, DropController dropController, DNDContext dndContext) {
+    public DragPanel(Element el, DropController dropController, DNDContext dndContext, DNDResources dndResources) {
         super(el);
+        setStyleName(dndResources.css().dragPanel());
         this.dropController = dropController;
         this.dndContext = dndContext;
         nativePreviewHandlerRegistration = Event.addNativePreviewHandler(this);

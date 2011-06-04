@@ -32,7 +32,6 @@ import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.user.client.ui.AbstractImagePrototype;
 import com.google.gwt.user.client.ui.HasVerticalAlignment;
 
-import java.security.MessageDigest;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -47,6 +46,7 @@ import java.util.Set;
 @SuppressWarnings({"JavaDoc"})
 public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
     public static final String MOUSE_DOWN = MouseDownEvent.getType().getName();
+    private final String dragHandlerClass;
 
     interface Template extends SafeHtmlTemplates {
         @Template("<div style=\"position:relative;padding-{0}:{1}px;zoom:1;\">{2}<div>{3}</div></div>")
@@ -56,21 +56,21 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
         /**
          * The wrapper around the image vertically aligned to the bottom.
          */
-        @Template("<div style=\"position:absolute;{0}:0px;bottom:0px;line-height:0px;\">{1}</div>")
-        SafeHtml imageWrapperBottom(String direction, SafeHtml image);
+        @Template("<div class='{2}' style=\"position:absolute;{0}:0px;bottom:0px;line-height:0px;\">{1}</div>")
+        SafeHtml imageWrapperBottom(String direction, SafeHtml image, String dragHandlerClass);
 
         /**
          * The wrapper around the image vertically aligned to the middle.
          */
-        @Template("<div style=\"position:absolute;{0}:0px;top:50%;line-height:0px;"
+        @Template("<div class='{3}' class='draggable' style=\"position:absolute;{0}:0px;top:50%;line-height:0px;"
                 + "margin-top:-{1}px;\">{2}</div>")
-        SafeHtml imageWrapperMiddle(String direction, int halfHeight, SafeHtml image);
+        SafeHtml imageWrapperMiddle(String direction, int halfHeight, SafeHtml image, String dragHandlerClass);
 
         /**
          * The wrapper around the image vertically aligned to the top.
          */
-        @Template("<div style=\"position:absolute;{0}:0px;top:0px;line-height:0px;\">{1}</div>")
-        SafeHtml imageWrapperTop(String direction, SafeHtml image);
+        @Template("<div class='{2}' style=\"position:absolute;{0}:0px;top:0px;line-height:0px;\">{1}</div>")
+        SafeHtml imageWrapperTop(String direction, SafeHtml image, String dragHandlerClass);
     }
 
     /**
@@ -103,7 +103,7 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
      * @param cell           the cell to decorate
      */
     public DraggableCellDecorator(DragSource dragSource, DragController dragController, Cell<C> cell) {
-        this(dragSource, dragController, DNDResources.INSTANCE.images().dragHandle(), cell, HasVerticalAlignment.ALIGN_MIDDLE, DEFAULT_SPACING);
+        this(dragSource, dragController, DNDResources.INSTANCE, cell, HasVerticalAlignment.ALIGN_MIDDLE, DEFAULT_SPACING);
     }
 
     /**
@@ -111,12 +111,12 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
      *
      * @param dragSource     - drag source
      * @param dragController - drag controller
-     * @param icon           the icon to use
+     * @param dndResources   dndResources
      * @param cell           the cell to decorate
      * @param valign         the vertical alignment attribute of the contents
      * @param spacing        the pixel space between the icon and the cell
      */
-    public DraggableCellDecorator(DragSource dragSource, DragController dragController, ImageResource icon, Cell<C> cell,
+    public DraggableCellDecorator(DragSource dragSource, DragController dragController, DNDResources dndResources, Cell<C> cell,
                            HasVerticalAlignment.VerticalAlignmentConstant valign, int spacing) {
         this.dragSource = dragSource;
         this.dragController = dragController;
@@ -124,6 +124,8 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
             template = GWT.create(Template.class);
         }
         this.cell = cell;
+        this.dragHandlerClass = dndResources.css().dragHandler();
+        ImageResource icon = dndResources.images().dragHandle();
         this.iconHtml = getImageHtml(icon, valign, false);
         this.imageWidth = icon.getWidth() + spacing;
         this.placeHolderHtml = getImageHtml(icon, valign, true);
@@ -158,8 +160,8 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
             EventTarget eventTarget = event.getEventTarget();
             if (Element.is(eventTarget)) {
               Element target = eventTarget.cast();
-              Element wrapper = parent.getFirstChildElement();
-              if (wrapper != null && wrapper.isOrHasChild(target)) {
+              Element wrapper = target.getParentElement();
+              if (wrapper != null && dragHandlerClass.equals(wrapper.getClassName())) {
                   DNDContext dndContext = dragSource.startDragging(value);
                   dragController.dragStart(dndContext, parent);
                   event.stopPropagation();
@@ -168,7 +170,8 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
               }
             }
         }
-        cell.onBrowserEvent(context, getCellParent(parent), getValue(value), event, getValueUpdater());
+        final Element cellParent = getCellParent(parent);
+        cell.onBrowserEvent(context, cellParent, getValue(value), event, getValueUpdater());
     }
 
     public void render(Context context, T value, SafeHtmlBuilder sb) {
@@ -233,12 +236,12 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
 
         // Create the wrapper based on the vertical alignment.
         if (HasVerticalAlignment.ALIGN_TOP == valign) {
-            return template.imageWrapperTop(direction, image);
+            return template.imageWrapperTop(direction, image, dragHandlerClass);
         } else if (HasVerticalAlignment.ALIGN_BOTTOM == valign) {
-            return template.imageWrapperBottom(direction, image);
+            return template.imageWrapperBottom(direction, image, dragHandlerClass);
         } else {
             int halfHeight = (int) Math.round(res.getHeight() / 2.0);
-            return template.imageWrapperMiddle(direction, halfHeight, image);
+            return template.imageWrapperMiddle(direction, halfHeight, image, dragHandlerClass);
         }
     }
 
@@ -249,7 +252,8 @@ public abstract class DraggableCellDecorator<T, C> implements Cell<T> {
      * @return the decorated cell's parent
      */
     private Element getCellParent(Element parent) {
-        return parent.getFirstChildElement().getChild(1).cast();
+        final Element element = parent.getFirstChildElement().getFirstChildElement();
+        return element.getChild(1).cast();
     }
 
     public abstract C getValue(T value);

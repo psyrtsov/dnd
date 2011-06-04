@@ -1,5 +1,6 @@
 package app.dnd.drag;
 
+import app.dnd.resources.DNDResources;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.Panel;
@@ -11,14 +12,20 @@ import app.dnd.DropController;
  */
 public class DragController {
     private final Panel panel;
+    private final DNDResources dndResources;
     private DropController dropController;
 
     public DragController(ComplexPanel panel) {
+        this(panel, DNDResources.INSTANCE);
+    }
+
+    public DragController(ComplexPanel panel, DNDResources dndResources) {
         this.panel = panel;
+        this.dndResources = dndResources;
     }
 
     public boolean dragStart(DNDContext dndContext, Element parent) {
-        panel.add(new DragPanel(parent, dropController, dndContext));
+        panel.add(new DragPanel(parent, dropController, dndContext, dndResources));
         return true;
     }
 

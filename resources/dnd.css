@@ -5,3 +5,11 @@
   border:gray dashed;
   width:100%;
 }
+
+.dragHandler {
+  cursor:move
+}
+
+.dragPanel {
+  cursor:move
+}

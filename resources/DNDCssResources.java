@@ -9,4 +9,8 @@ public interface DNDCssResources extends CssResource {
     public static final String DEFAULT_CSS = "app/dnd/resources/dnd.css";
 
     String positioner();
+
+    String dragHandler();
+
+    String dragPanel();
 }

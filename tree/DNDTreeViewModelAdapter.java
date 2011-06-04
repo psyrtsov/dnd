@@ -26,6 +26,9 @@ import java.util.Map;
 public abstract class DNDTreeViewModelAdapter implements DragSource {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private final IdMap idMap = new IdMap();
+    /**
+     * psdo: investigate possibility of using data from model instead of cache
+     */    
     private Map<String, DNDNodeInfo> cache = new HashMap<String, DNDNodeInfo>();
     private boolean positionerOffset = false;
     private DNDTreeViewModel dndTreeViewModel;
@@ -103,6 +106,9 @@ public abstract class DNDTreeViewModelAdapter implements DragSource {
     public DNDContext startDragging(Object item) {
         final String key = idMap.get(item).toString();
         final DNDNodeInfo dndNodeInfo = cache.get(key);
+        if (dndNodeInfo == null) {
+            GWT.log("dndNodeInfo is null for "+ item);
+        }
         final int savedIdx = dndNodeInfo.indexOf();
         final DNDNodeInfo parentDndNodeInfo = dndNodeInfo.parentDndNodeInfo;
         dndNodeInfo.remove();
@@ -160,7 +166,11 @@ public abstract class DNDTreeViewModelAdapter implements DragSource {
         }
 
         public int indexOf() {
-            List<?> list = parentDndNodeInfo.dataProvider.getList();
+            if (parentDndNodeInfo == null) {
+                GWT.log("parentDndNodeInfo is null for "+ item);
+            }
+            final ListDataProvider provider = parentDndNodeInfo.dataProvider;
+            List<?> list = provider.getList();
             return list.indexOf(item);
         }
 
